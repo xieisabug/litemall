@@ -1,5 +1,7 @@
 package org.linlinjava.litemall.wx.web;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.db.domain.LitemallCategory;
 import org.linlinjava.litemall.db.service.LitemallCategoryService;
@@ -16,39 +18,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 类目服务
+ */
 @RestController
 @RequestMapping("/wx/catalog")
 @Validated
 public class WxCatalogController {
+    private final Log logger = LogFactory.getLog(WxCatalogController.class);
+
     @Autowired
     private LitemallCategoryService categoryService;
 
     /**
-     * 分类栏目
+     * 分类详情
      *
-     * @param id   分类类目ID
+     * @param id   分类类目ID。
      *             如果分类类目ID是空，则选择第一个分类类目。
      *             需要注意，这里分类类目是一级类目
-     * @param page 分页页数
-     * @param size 分页大小
-     * @return 分类栏目
-     * 成功则
-     * {
-     * errno: 0,
-     * errmsg: '成功',
-     * data:
-     * {
-     * categoryList: xxx,
-     * currentCategory: xxx,
-     * currentSubCategory: xxx
-     * }
-     * }
-     * 失败则 { errno: XXX, errmsg: XXX }
+     * @return 分类详情
      */
     @GetMapping("index")
-    public Object index(Integer id,
-                        @RequestParam(defaultValue = "1") Integer page,
-                        @RequestParam(defaultValue = "10") Integer size) {
+    public Object index(Integer id) {
 
         // 所有一级分类目录
         List<LitemallCategory> l1CatList = categoryService.queryL1();
@@ -75,9 +66,9 @@ public class WxCatalogController {
     }
 
     /**
-     * 一次性获取全部分类数据
+     * 所有分类数据
      *
-     * @return
+     * @return 所有分类数据
      */
     @GetMapping("all")
     public Object queryAll() {
@@ -123,17 +114,6 @@ public class WxCatalogController {
      *
      * @param id 分类类目ID
      * @return 当前分类栏目
-     * 成功则
-     * {
-     * errno: 0,
-     * errmsg: '成功',
-     * data:
-     * {
-     * currentCategory: xxx,
-     * currentSubCategory: xxx
-     * }
-     * }
-     * 失败则 { errno: XXX, errmsg: XXX }
      */
     @GetMapping("current")
     public Object current(@NotNull Integer id) {

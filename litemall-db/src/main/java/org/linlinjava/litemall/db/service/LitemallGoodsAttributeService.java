@@ -1,12 +1,12 @@
 package org.linlinjava.litemall.db.service;
 
-import com.github.pagehelper.PageHelper;
 import org.linlinjava.litemall.db.dao.LitemallGoodsAttributeMapper;
 import org.linlinjava.litemall.db.domain.LitemallGoodsAttribute;
 import org.linlinjava.litemall.db.domain.LitemallGoodsAttributeExample;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -20,15 +20,9 @@ public class LitemallGoodsAttributeService {
         return goodsAttributeMapper.selectByExample(example);
     }
 
-    public void updateById(LitemallGoodsAttribute goodsAttribute) {
-        goodsAttributeMapper.updateByPrimaryKeySelective(goodsAttribute);
-    }
-
-    public void deleteById(Integer id) {
-        goodsAttributeMapper.logicalDeleteByPrimaryKey(id);
-    }
-
     public void add(LitemallGoodsAttribute goodsAttribute) {
+        goodsAttribute.setAddTime(LocalDateTime.now());
+        goodsAttribute.setUpdateTime(LocalDateTime.now());
         goodsAttributeMapper.insertSelective(goodsAttribute);
     }
 

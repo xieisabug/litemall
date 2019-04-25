@@ -1,7 +1,7 @@
 package org.linlinjava.litemall.db.service;
 
 import com.github.pagehelper.PageHelper;
-import org.linlinjava.litemall.db.dao.*;
+import org.linlinjava.litemall.db.dao.LitemallRegionMapper;
 import org.linlinjava.litemall.db.domain.LitemallRegion;
 import org.linlinjava.litemall.db.domain.LitemallRegionExample;
 import org.springframework.stereotype.Service;
@@ -12,8 +12,16 @@ import java.util.List;
 
 @Service
 public class LitemallRegionService {
+
     @Resource
     private LitemallRegionMapper regionMapper;
+
+    public List<LitemallRegion> getAll(){
+        LitemallRegionExample example = new LitemallRegionExample();
+        byte b = 4;
+        example.or().andTypeNotEqualTo(b);
+        return regionMapper.selectByExample(example);
+    }
 
     public List<LitemallRegion> queryByPid(Integer parentId) {
         LitemallRegionExample example = new LitemallRegionExample();
@@ -29,10 +37,10 @@ public class LitemallRegionService {
         LitemallRegionExample example = new LitemallRegionExample();
         LitemallRegionExample.Criteria criteria = example.createCriteria();
 
-        if(!StringUtils.isEmpty(name)){
+        if (!StringUtils.isEmpty(name)) {
             criteria.andNameLike("%" + name + "%");
         }
-        if(!StringUtils.isEmpty(code)){
+        if (!StringUtils.isEmpty(code)) {
             criteria.andCodeEqualTo(code);
         }
 
@@ -44,16 +52,10 @@ public class LitemallRegionService {
         return regionMapper.selectByExample(example);
     }
 
-    public int countSelective(String name, Integer code, Integer page, Integer size, String sort, String order) {
-        LitemallRegionExample example = new LitemallRegionExample();
-        LitemallRegionExample.Criteria criteria = example.createCriteria();
 
-        if(!StringUtils.isEmpty(name)){
-            criteria.andNameLike("%" + name + "%");
-        }
-        if(code != null){
-            criteria.andCodeEqualTo(code);
-        }
-        return (int)regionMapper.countByExample(example);
+    public List<LitemallRegion> queryChildren(Integer id) {
+        LitemallRegionExample example = new LitemallRegionExample();
+        example.or().andPidEqualTo(id);
+        return regionMapper.selectByExample(example);
     }
 }

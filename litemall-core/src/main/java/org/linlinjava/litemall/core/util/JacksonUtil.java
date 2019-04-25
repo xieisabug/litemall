@@ -3,11 +3,10 @@ package org.linlinjava.litemall.core.util;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public class JacksonUtil {
     public static String parseString(String body, String field) {
@@ -16,8 +15,25 @@ public class JacksonUtil {
         try {
             node = mapper.readTree(body);
             JsonNode leaf = node.get(field);
-            if(leaf != null)
+            if (leaf != null)
                 return leaf.asText();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+    public static List<String> parseStringList(String body, String field) {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode node = null;
+        try {
+            node = mapper.readTree(body);
+            JsonNode leaf = node.get(field);
+
+            if (leaf != null)
+                return mapper.convertValue(leaf, new TypeReference<List<String>>() {
+                });
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -30,7 +46,7 @@ public class JacksonUtil {
         try {
             node = mapper.readTree(body);
             JsonNode leaf = node.get(field);
-            if(leaf != null)
+            if (leaf != null)
                 return leaf.asInt();
         } catch (IOException e) {
             e.printStackTrace();
@@ -45,14 +61,14 @@ public class JacksonUtil {
             node = mapper.readTree(body);
             JsonNode leaf = node.get(field);
 
-            if(leaf != null)
-                return mapper.convertValue(leaf, new TypeReference<List<String>>(){});
+            if (leaf != null)
+                return mapper.convertValue(leaf, new TypeReference<List<Integer>>() {
+                });
         } catch (IOException e) {
             e.printStackTrace();
         }
         return null;
     }
-
 
 
     public static Boolean parseBoolean(String body, String field) {
@@ -61,7 +77,7 @@ public class JacksonUtil {
         try {
             node = mapper.readTree(body);
             JsonNode leaf = node.get(field);
-            if(leaf != null)
+            if (leaf != null)
                 return leaf.asBoolean();
         } catch (IOException e) {
             e.printStackTrace();
@@ -75,7 +91,7 @@ public class JacksonUtil {
         try {
             node = mapper.readTree(body);
             JsonNode leaf = node.get(field);
-            if(leaf != null) {
+            if (leaf != null) {
                 Integer value = leaf.asInt();
                 return value.shortValue();
             }
@@ -91,7 +107,7 @@ public class JacksonUtil {
         try {
             node = mapper.readTree(body);
             JsonNode leaf = node.get(field);
-            if(leaf != null) {
+            if (leaf != null) {
                 Integer value = leaf.asInt();
                 return value.byteValue();
             }
@@ -115,7 +131,7 @@ public class JacksonUtil {
     }
 
     public static Object toNode(String json) {
-        if(json == null){
+        if (json == null) {
             return null;
         }
         ObjectMapper mapper = new ObjectMapper();
@@ -126,6 +142,16 @@ public class JacksonUtil {
             e.printStackTrace();
         }
 
+        return null;
+    }
+
+    public static Map<String, String> toMap(String data) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            return objectMapper.readValue(data, new TypeReference<Map<String, String>>(){});
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return null;
     }
 

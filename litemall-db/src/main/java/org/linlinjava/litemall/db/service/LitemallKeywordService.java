@@ -8,18 +8,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class LitemallKeywordService {
     @Resource
     private LitemallKeywordMapper keywordsMapper;
-
-    public List<LitemallKeyword> queryDefaults() {
-        LitemallKeywordExample example = new LitemallKeywordExample();
-        example.or().andIsDefaultEqualTo(true).andDeletedEqualTo(false);
-        return keywordsMapper.selectByExample(example);
-    }
 
     public LitemallKeyword queryDefault() {
         LitemallKeywordExample example = new LitemallKeywordExample();
@@ -33,11 +28,11 @@ public class LitemallKeywordService {
         return keywordsMapper.selectByExample(example);
     }
 
-    public List<LitemallKeyword> queryByKeyword(String keyword, Integer page, Integer size) {
+    public List<LitemallKeyword> queryByKeyword(String keyword, Integer page, Integer limit) {
         LitemallKeywordExample example = new LitemallKeywordExample();
         example.setDistinct(true);
         example.or().andKeywordLike("%" + keyword + "%").andDeletedEqualTo(false);
-        PageHelper.startPage(page, size);
+        PageHelper.startPage(page, limit);
         return keywordsMapper.selectByExampleSelective(example, LitemallKeyword.Column.keyword);
     }
 
@@ -61,23 +56,9 @@ public class LitemallKeywordService {
         return keywordsMapper.selectByExample(example);
     }
 
-    public int countSelective(String keyword, String url, Integer page, Integer limit, String sort, String order) {
-        LitemallKeywordExample example = new LitemallKeywordExample();
-        LitemallKeywordExample.Criteria criteria = example.createCriteria();
-
-        if (!StringUtils.isEmpty(keyword)) {
-            criteria.andKeywordLike("%" + keyword + "%");
-        }
-        if (!StringUtils.isEmpty(url)) {
-            criteria.andUrlLike("%" + url + "%");
-        }
-        criteria.andDeletedEqualTo(false);
-
-        PageHelper.startPage(page, limit);
-        return (int)keywordsMapper.countByExample(example);
-    }
-
     public void add(LitemallKeyword keywords) {
+        keywords.setAddTime(LocalDateTime.now());
+        keywords.setUpdateTime(LocalDateTime.now());
         keywordsMapper.insertSelective(keywords);
     }
 
@@ -85,8 +66,9 @@ public class LitemallKeywordService {
         return keywordsMapper.selectByPrimaryKey(id);
     }
 
-    public void updateById(LitemallKeyword keywords) {
-        keywordsMapper.updateByPrimaryKeySelective(keywords);
+    public int updateById(LitemallKeyword keywords) {
+        keywords.setUpdateTime(LocalDateTime.now());
+        return keywordsMapper.updateByPrimaryKeySelective(keywords);
     }
 
     public void deleteById(Integer id) {

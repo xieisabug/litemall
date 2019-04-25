@@ -1,21 +1,23 @@
 package org.linlinjava.litemall.admin.web;
 
+import com.github.pagehelper.PageInfo;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.linlinjava.litemall.admin.annotation.LoginAdmin;
-import org.linlinjava.litemall.core.util.RegexUtil;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.linlinjava.litemall.admin.annotation.RequiresPermissionsDesc;
+import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
 import org.linlinjava.litemall.db.domain.LitemallAddress;
 import org.linlinjava.litemall.db.service.LitemallAddressService;
 import org.linlinjava.litemall.db.service.LitemallRegionService;
-import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.constraints.NotNull;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,7 +34,7 @@ public class AdminAddressController {
     @Autowired
     private LitemallRegionService regionService;
 
-    private Map<String, Object> toVo (LitemallAddress address){
+    private Map<String, Object> toVo(LitemallAddress address) {
         Map<String, Object> addressVo = new HashMap<>();
         addressVo.put("id", address.getId());
         addressVo.put("userId", address.getUserId());
@@ -52,22 +54,20 @@ public class AdminAddressController {
         return addressVo;
     }
 
+    @RequiresPermissions("admin:address:list")
+    @RequiresPermissionsDesc(menu={"用户管理" , "收货地址"}, button="查询")
     @GetMapping("/list")
-    public Object list(@LoginAdmin Integer adminId,
-                       Integer userId, String name,
+    public Object list(Integer userId, String name,
                        @RequestParam(defaultValue = "1") Integer page,
                        @RequestParam(defaultValue = "10") Integer limit,
                        @Sort @RequestParam(defaultValue = "add_time") String sort,
-                       @Order @RequestParam(defaultValue = "desc") String order){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
-        }
+                       @Order @RequestParam(defaultValue = "desc") String order) {
 
         List<LitemallAddress> addressList = addressService.querySelective(userId, name, page, limit, sort, order);
-        int total = addressService.countSelective(userId, name, page, limit, sort, order);
+        long total = PageInfo.of(addressList).getTotal();
 
         List<Map<String, Object>> addressVoList = new ArrayList<>(addressList.size());
-        for(LitemallAddress address : addressList){
+        for (LitemallAddress address : addressList) {
             Map<String, Object> addressVo = toVo(address);
             addressVoList.add(addressVo);
         }
@@ -78,53 +78,4 @@ public class AdminAddressController {
 
         return ResponseUtil.ok(data);
     }
-
-    @PostMapping("/create")
-    public Object create(@LoginAdmin Integer adminId, @RequestBody LitemallAddress address){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
-        }
-
-        String mobile = address.getMobile();
-        if(!RegexUtil.isMobileExact(mobile)){
-            return ResponseUtil.fail(403, "手机号格式不正确");
-        }
-
-        address.setAddTime(LocalDateTime.now());
-        addressService.add(address);
-
-        Map<String, Object> addressVo = toVo(address);
-        return ResponseUtil.ok(addressVo);
-    }
-
-    @GetMapping("/read")
-    public Object read(@LoginAdmin Integer adminId, @NotNull Integer id){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
-        }
-
-        LitemallAddress address = addressService.findById(id);
-        Map<String, Object> addressVo = toVo(address);
-        return ResponseUtil.ok(addressVo);
-    }
-
-    @PostMapping("/update")
-    public Object update(@LoginAdmin Integer adminId, @RequestBody LitemallAddress address){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
-        }
-        addressService.updateById(address);
-        Map<String, Object> addressVo = toVo(address);
-        return ResponseUtil.ok(addressVo);
-    }
-
-    @PostMapping("/delete")
-    public Object delete(@LoginAdmin Integer adminId, @RequestBody LitemallAddress address){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
-        }
-        addressService.delete(address.getId());
-        return ResponseUtil.ok();
-    }
-
 }

@@ -11,6 +11,7 @@ const user = {
     avatar: '',
     introduction: '',
     roles: [],
+    perms: [],
     setting: {
       articlePlatform: []
     }
@@ -40,6 +41,9 @@ const user = {
     },
     SET_ROLES: (state, roles) => {
       state.roles = roles
+    },
+    SET_PERMS: (state, perms) => {
+      state.perms = perms
     }
   },
 
@@ -64,6 +68,13 @@ const user = {
       return new Promise((resolve, reject) => {
         getUserInfo(state.token).then(response => {
           const data = response.data.data
+
+          if (data.perms && data.perms.length > 0) { // 验证返回的perms是否是一个非空数组
+            commit('SET_PERMS', data.perms)
+          } else {
+            reject('getInfo: perms must be a non-null array !')
+          }
+
           commit('SET_ROLES', data.roles)
           commit('SET_NAME', data.name)
           commit('SET_AVATAR', data.avatar)
@@ -95,6 +106,7 @@ const user = {
         logout(state.token).then(() => {
           commit('SET_TOKEN', '')
           commit('SET_ROLES', [])
+          commit('SET_PERMS', [])
           removeToken()
           resolve()
         }).catch(error => {
@@ -113,16 +125,18 @@ const user = {
     },
 
     // 动态修改权限
-    ChangeRoles({ commit }, role) {
+    ChangeRoles({ commit, dispatch }, role) {
       return new Promise(resolve => {
         commit('SET_TOKEN', role)
         setToken(role)
         getUserInfo(role).then(response => {
-          const data = response.data.data
+          const data = response.data
           commit('SET_ROLES', data.roles)
+          commit('SET_PERMS', data.perms)
           commit('SET_NAME', data.name)
           commit('SET_AVATAR', data.avatar)
           commit('SET_INTRODUCTION', data.introduction)
+          dispatch('GenerateRoutes', data) // 动态修改权限后 重绘侧边菜单
           resolve()
         })
       })

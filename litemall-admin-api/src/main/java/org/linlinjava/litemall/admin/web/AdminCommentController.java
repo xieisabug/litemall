@@ -1,19 +1,19 @@
 package org.linlinjava.litemall.admin.web;
 
+import com.github.pagehelper.PageInfo;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.linlinjava.litemall.admin.annotation.LoginAdmin;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.linlinjava.litemall.admin.annotation.RequiresPermissionsDesc;
+import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
 import org.linlinjava.litemall.db.domain.LitemallComment;
 import org.linlinjava.litemall.db.service.LitemallCommentService;
-import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.constraints.NotNull;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,19 +27,16 @@ public class AdminCommentController {
     @Autowired
     private LitemallCommentService commentService;
 
+    @RequiresPermissions("admin:comment:list")
+    @RequiresPermissionsDesc(menu={"商品管理" , "评论管理"}, button="查询")
     @GetMapping("/list")
-    public Object list(@LoginAdmin Integer adminId,
-                       String userId, String valueId,
+    public Object list(String userId, String valueId,
                        @RequestParam(defaultValue = "1") Integer page,
                        @RequestParam(defaultValue = "10") Integer limit,
                        @Sort @RequestParam(defaultValue = "add_time") String sort,
-                       @Order @RequestParam(defaultValue = "desc") String order){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
-        }
-
+                       @Order @RequestParam(defaultValue = "desc") String order) {
         List<LitemallComment> brandList = commentService.querySelective(userId, valueId, page, limit, sort, order);
-        int total = commentService.countSelective(userId, valueId, page, limit, sort, order);
+        long total = PageInfo.of(brandList).getTotal();
         Map<String, Object> data = new HashMap<>();
         data.put("total", total);
         data.put("items", brandList);
@@ -47,45 +44,15 @@ public class AdminCommentController {
         return ResponseUtil.ok(data);
     }
 
-    @PostMapping("/create")
-    public Object create(@LoginAdmin Integer adminId, @RequestBody LitemallComment comment){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
-        }
-        comment.setAddTime(LocalDateTime.now());
-        commentService.add(comment);
-        return ResponseUtil.ok(comment);
-    }
-
-    @GetMapping("/read")
-    public Object read(@LoginAdmin Integer adminId,  @NotNull Integer id){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
-        }
-
-        if(id == null){
+    @RequiresPermissions("admin:comment:delete")
+    @RequiresPermissionsDesc(menu={"商品管理" , "评论管理"}, button="删除")
+    @PostMapping("/delete")
+    public Object delete(@RequestBody LitemallComment comment) {
+        Integer id = comment.getId();
+        if (id == null) {
             return ResponseUtil.badArgument();
         }
-
-        LitemallComment comment = commentService.findById(id);
-        return ResponseUtil.ok(comment);
-    }
-
-    @PostMapping("/update")
-    public Object update(@LoginAdmin Integer adminId, @RequestBody LitemallComment comment){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
-        }
-        commentService.updateById(comment);
-        return ResponseUtil.ok(comment);
-    }
-
-    @PostMapping("/delete")
-    public Object delete(@LoginAdmin Integer adminId, @RequestBody LitemallComment comment){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
-        }
-        commentService.deleteById(comment.getId());
+        commentService.deleteById(id);
         return ResponseUtil.ok();
     }
 

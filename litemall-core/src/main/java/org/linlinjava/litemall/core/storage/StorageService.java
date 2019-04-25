@@ -5,11 +5,9 @@ import org.linlinjava.litemall.db.domain.LitemallStorage;
 import org.linlinjava.litemall.db.service.LitemallStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.stream.Stream;
 
 /**
@@ -45,7 +43,7 @@ public class StorageService {
      * @param contentType   文件类型
      * @param fileName      文件索引名
      */
-    public String store(InputStream inputStream, long contentLength, String contentType, String fileName) {
+    public LitemallStorage store(InputStream inputStream, long contentLength, String contentType, String fileName) {
         String key = generateKey(fileName);
         storage.store(inputStream, contentLength, contentType, key);
 
@@ -54,13 +52,11 @@ public class StorageService {
         storageInfo.setName(fileName);
         storageInfo.setSize((int) contentLength);
         storageInfo.setType(contentType);
-        storageInfo.setAddTime(LocalDateTime.now());
-        storageInfo.setModified(LocalDateTime.now());
         storageInfo.setKey(key);
         storageInfo.setUrl(url);
         litemallStorageService.add(storageInfo);
 
-        return url;
+        return storageInfo;
     }
 
     private String generateKey(String originalFilename) {
@@ -95,7 +91,7 @@ public class StorageService {
         storage.delete(keyName);
     }
 
-    public String generateUrl(String keyName) {
+    private String generateUrl(String keyName) {
         return storage.generateUrl(keyName);
     }
 }

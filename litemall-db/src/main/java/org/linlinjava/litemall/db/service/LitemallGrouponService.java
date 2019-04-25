@@ -8,12 +8,13 @@ import org.linlinjava.litemall.db.domain.LitemallGrouponExample;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class LitemallGrouponService {
     @Resource
-    LitemallGrouponMapper mapper;
+    private LitemallGrouponMapper mapper;
 
     /**
      * 获取用户发起的团购记录
@@ -90,8 +91,9 @@ public class LitemallGrouponService {
         return (int) mapper.countByExample(example);
     }
 
-    public void update(LitemallGroupon groupon) {
-        mapper.updateByPrimaryKey(groupon);
+    public int updateById(LitemallGroupon groupon) {
+        groupon.setUpdateTime(LocalDateTime.now());
+        return mapper.updateByPrimaryKeySelective(groupon);
     }
 
     /**
@@ -101,6 +103,8 @@ public class LitemallGrouponService {
      * @return
      */
     public int createGroupon(LitemallGroupon groupon) {
+        groupon.setAddTime(LocalDateTime.now());
+        groupon.setUpdateTime(LocalDateTime.now());
         return mapper.insertSelective(groupon);
     }
 
@@ -128,19 +132,5 @@ public class LitemallGrouponService {
 
         PageHelper.startPage(page, size);
         return mapper.selectByExample(example);
-    }
-
-    public int countSelective(String rulesId, Integer page, Integer limit, String sort, String order) {
-        LitemallGrouponExample example = new LitemallGrouponExample();
-        LitemallGrouponExample.Criteria criteria = example.createCriteria();
-
-        if (!StringUtils.isEmpty(rulesId)) {
-            criteria.andRulesIdEqualTo(Integer.parseInt(rulesId));
-        }
-        criteria.andDeletedEqualTo(false);
-        criteria.andPayedEqualTo(true);
-        criteria.andGrouponIdEqualTo(0);
-
-        return (int) mapper.countByExample(example);
     }
 }

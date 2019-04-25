@@ -1,19 +1,21 @@
 package org.linlinjava.litemall.admin.web;
 
+import com.github.pagehelper.PageInfo;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.linlinjava.litemall.admin.annotation.LoginAdmin;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.linlinjava.litemall.admin.annotation.RequiresPermissionsDesc;
+import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
 import org.linlinjava.litemall.db.domain.LitemallKeyword;
 import org.linlinjava.litemall.db.service.LitemallKeywordService;
-import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.NotNull;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,61 +29,74 @@ public class AdminKeywordController {
     @Autowired
     private LitemallKeywordService keywordService;
 
+    @RequiresPermissions("admin:keyword:list")
+    @RequiresPermissionsDesc(menu={"商场管理" , "关键词"}, button="查询")
     @GetMapping("/list")
-    public Object list(@LoginAdmin Integer adminId,
-                       String keyword, String url,
+    public Object list(String keyword, String url,
                        @RequestParam(defaultValue = "1") Integer page,
                        @RequestParam(defaultValue = "10") Integer limit,
                        @Sort @RequestParam(defaultValue = "add_time") String sort,
-                       @Order @RequestParam(defaultValue = "desc") String order){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
-        }
-
-        List<LitemallKeyword> brandList = keywordService.querySelective(keyword, url, page, limit, sort, order);
-        int total = keywordService.countSelective(keyword, url, page, limit, sort, order);
+                       @Order @RequestParam(defaultValue = "desc") String order) {
+        List<LitemallKeyword> keywordList = keywordService.querySelective(keyword, url, page, limit, sort, order);
+        long total = PageInfo.of(keywordList).getTotal();
         Map<String, Object> data = new HashMap<>();
         data.put("total", total);
-        data.put("items", brandList);
+        data.put("items", keywordList);
 
         return ResponseUtil.ok(data);
     }
 
-    @PostMapping("/create")
-    public Object create(@LoginAdmin Integer adminId, @RequestBody LitemallKeyword keywords){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
+    private Object validate(LitemallKeyword keywords) {
+        String keyword = keywords.getKeyword();
+        if (StringUtils.isEmpty(keyword)) {
+            return ResponseUtil.badArgument();
         }
-        keywords.setAddTime(LocalDateTime.now());
+        return null;
+    }
+
+    @RequiresPermissions("admin:keyword:create")
+    @RequiresPermissionsDesc(menu={"商场管理" , "关键词"}, button="添加")
+    @PostMapping("/create")
+    public Object create(@RequestBody LitemallKeyword keywords) {
+        Object error = validate(keywords);
+        if (error != null) {
+            return error;
+        }
         keywordService.add(keywords);
         return ResponseUtil.ok(keywords);
     }
 
+    @RequiresPermissions("admin:keyword:read")
+    @RequiresPermissionsDesc(menu={"商场管理" , "关键词"}, button="详情")
     @GetMapping("/read")
-    public Object read(@LoginAdmin Integer adminId, @NotNull Integer id){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
-        }
-
-        LitemallKeyword brand = keywordService.findById(id);
-        return ResponseUtil.ok(brand);
+    public Object read(@NotNull Integer id) {
+        LitemallKeyword keyword = keywordService.findById(id);
+        return ResponseUtil.ok(keyword);
     }
 
+    @RequiresPermissions("admin:keyword:update")
+    @RequiresPermissionsDesc(menu={"商场管理" , "关键词"}, button="编辑")
     @PostMapping("/update")
-    public Object update(@LoginAdmin Integer adminId, @RequestBody LitemallKeyword keywords){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
+    public Object update(@RequestBody LitemallKeyword keywords) {
+        Object error = validate(keywords);
+        if (error != null) {
+            return error;
         }
-        keywordService.updateById(keywords);
+        if (keywordService.updateById(keywords) == 0) {
+            return ResponseUtil.updatedDataFailed();
+        }
         return ResponseUtil.ok(keywords);
     }
 
+    @RequiresPermissions("admin:keyword:delete")
+    @RequiresPermissionsDesc(menu={"商场管理" , "关键词"}, button="删除")
     @PostMapping("/delete")
-    public Object delete(@LoginAdmin Integer adminId, @RequestBody LitemallKeyword brand){
-        if(adminId == null){
-            return ResponseUtil.unlogin();
+    public Object delete(@RequestBody LitemallKeyword keyword) {
+        Integer id = keyword.getId();
+        if (id == null) {
+            return ResponseUtil.badArgument();
         }
-        keywordService.deleteById(brand.getId());
+        keywordService.deleteById(id);
         return ResponseUtil.ok();
     }
 

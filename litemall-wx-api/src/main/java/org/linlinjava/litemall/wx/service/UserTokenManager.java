@@ -1,7 +1,7 @@
 package org.linlinjava.litemall.wx.service;
 
 import org.linlinjava.litemall.core.util.CharUtil;
-import org.linlinjava.litemall.wx.dao.UserToken;
+import org.linlinjava.litemall.wx.dto.UserToken;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -15,8 +15,6 @@ public class UserTokenManager {
     private static Map<Integer, UserToken> idMap = new HashMap<>();
 
     public static Integer getUserId(String token) {
-
-
         UserToken userToken = tokenMap.get(token);
         if (userToken == null) {
             return null;
@@ -58,5 +56,27 @@ public class UserTokenManager {
         idMap.put(id, userToken);
 
         return userToken;
+    }
+
+    public static String getSessionKey(Integer userId) {
+        UserToken userToken = idMap.get(userId);
+        if (userToken == null) {
+            return null;
+        }
+
+        if (userToken.getExpireTime().isBefore(LocalDateTime.now())) {
+            tokenMap.remove(userToken.getToken());
+            idMap.remove(userId);
+            return null;
+        }
+
+        return userToken.getSessionKey();
+    }
+
+    public static void removeToken(Integer userId) {
+        UserToken userToken = idMap.get(userId);
+        String token = userToken.getToken();
+        idMap.remove(userId);
+        tokenMap.remove(token);
     }
 }

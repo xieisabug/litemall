@@ -7,10 +7,10 @@ import org.linlinjava.litemall.db.domain.LitemallUserExample;
 import org.linlinjava.litemall.db.domain.UserVo;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
 import javax.annotation.Resource;
-import java.util.HashMap;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class LitemallUserService {
@@ -36,21 +36,24 @@ public class LitemallUserService {
     }
 
     public void add(LitemallUser user) {
+        user.setAddTime(LocalDateTime.now());
+        user.setUpdateTime(LocalDateTime.now());
         userMapper.insertSelective(user);
     }
 
-    public void update(LitemallUser user) {
-        userMapper.updateByPrimaryKeySelective(user);
+    public int updateById(LitemallUser user) {
+        user.setUpdateTime(LocalDateTime.now());
+        return userMapper.updateByPrimaryKeySelective(user);
     }
 
     public List<LitemallUser> querySelective(String username, String mobile, Integer page, Integer size, String sort, String order) {
         LitemallUserExample example = new LitemallUserExample();
         LitemallUserExample.Criteria criteria = example.createCriteria();
 
-        if(!StringUtils.isEmpty(username)){
+        if (!StringUtils.isEmpty(username)) {
             criteria.andUsernameLike("%" + username + "%");
         }
-        if(!StringUtils.isEmpty(mobile)){
+        if (!StringUtils.isEmpty(mobile)) {
             criteria.andMobileEqualTo(mobile);
         }
         criteria.andDeletedEqualTo(false);
@@ -63,26 +66,11 @@ public class LitemallUserService {
         return userMapper.selectByExample(example);
     }
 
-    public int countSeletive(String username, String mobile, Integer page, Integer size, String sort, String order) {
-        LitemallUserExample example = new LitemallUserExample();
-        LitemallUserExample.Criteria criteria = example.createCriteria();
-
-        if(!StringUtils.isEmpty(username)){
-            criteria.andUsernameLike("%" + username + "%");
-        }
-        if(!StringUtils.isEmpty(mobile)){
-            criteria.andMobileEqualTo(mobile);
-        }
-        criteria.andDeletedEqualTo(false);
-
-        return (int) userMapper.countByExample(example);
-    }
-
     public int count() {
         LitemallUserExample example = new LitemallUserExample();
         example.or().andDeletedEqualTo(false);
 
-        return (int)userMapper.countByExample(example);
+        return (int) userMapper.countByExample(example);
     }
 
     public List<LitemallUser> queryByUsername(String username) {
@@ -91,9 +79,21 @@ public class LitemallUserService {
         return userMapper.selectByExample(example);
     }
 
+    public boolean checkByUsername(String username) {
+        LitemallUserExample example = new LitemallUserExample();
+        example.or().andUsernameEqualTo(username).andDeletedEqualTo(false);
+        return userMapper.countByExample(example) != 0;
+    }
+
     public List<LitemallUser> queryByMobile(String mobile) {
         LitemallUserExample example = new LitemallUserExample();
         example.or().andMobileEqualTo(mobile).andDeletedEqualTo(false);
+        return userMapper.selectByExample(example);
+    }
+
+    public List<LitemallUser> queryByOpenid(String openid) {
+        LitemallUserExample example = new LitemallUserExample();
+        example.or().andWeixinOpenidEqualTo(openid).andDeletedEqualTo(false);
         return userMapper.selectByExample(example);
     }
 

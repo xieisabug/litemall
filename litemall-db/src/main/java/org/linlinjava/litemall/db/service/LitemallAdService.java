@@ -1,13 +1,14 @@
 package org.linlinjava.litemall.db.service;
 
 import com.github.pagehelper.PageHelper;
+import org.linlinjava.litemall.db.dao.LitemallAdMapper;
 import org.linlinjava.litemall.db.domain.LitemallAd;
 import org.linlinjava.litemall.db.domain.LitemallAdExample;
-import org.linlinjava.litemall.db.dao.LitemallAdMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -41,23 +42,9 @@ public class LitemallAdService {
         return adMapper.selectByExample(example);
     }
 
-    public int countSelective(String name, String content, Integer page, Integer size, String sort, String order) {
-        LitemallAdExample example = new LitemallAdExample();
-        LitemallAdExample.Criteria criteria = example.createCriteria();
-
-        if (!StringUtils.isEmpty(name)) {
-            criteria.andNameLike("%" + name + "%");
-        }
-        if (!StringUtils.isEmpty(content)) {
-            criteria.andContentLike("%" + content + "%");
-        }
-        criteria.andDeletedEqualTo(false);
-
-        return (int) adMapper.countByExample(example);
-    }
-
-    public void updateById(LitemallAd ad) {
-        adMapper.updateByPrimaryKeySelective(ad);
+    public int updateById(LitemallAd ad) {
+        ad.setUpdateTime(LocalDateTime.now());
+        return adMapper.updateByPrimaryKeySelective(ad);
     }
 
     public void deleteById(Integer id) {
@@ -65,6 +52,8 @@ public class LitemallAdService {
     }
 
     public void add(LitemallAd ad) {
+        ad.setAddTime(LocalDateTime.now());
+        ad.setUpdateTime(LocalDateTime.now());
         adMapper.insertSelective(ad);
     }
 
