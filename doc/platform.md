@@ -7,8 +7,12 @@
 * litemall-db模块
 * litemall-all模块
 
+litemall-db模块提供数据库访问服务。
+
+litemall-core模块提供通用服务。
+
 litemall-all模块则只是一个包裹模块，几乎没有任何代码。该模块的作用是融合两个spring boot模块
-和litemall-admin模块静态文件到一个单独spring boot应用中，并最终打包成war格式的项目安装包。
+和litemall-admin模块静态文件到一个单独Spring Boot可执行jar包中。
 
 ## 2.1 litemall数据库
 
@@ -53,7 +57,7 @@ litemall数据库由三个sql文件组成，在litemall-db文件夹下面的sql�
 
 ### 2.1.1 商品和货品设计
 
-这里商品存在商品表（litemall_goods)，商品属性表（litemall_goods_attribute），商品规格表（litemall_goods_specification），商品货品表（litemall_product）四种表
+这里商品存在商品表（litemall_goods)，商品属性表（litemall_goods_attribute），商品规格表（litemall_goods_specification），商品货品表（litemall_goods_product）四种表
 
 商品表是一种商品的基本信息，主要包括商品介绍，商品图片，商品所属类目，商品品牌商等；
 
@@ -70,7 +74,7 @@ litemall数据库由三个sql文件组成，在litemall-db文件夹下面的sql�
 * 多个规格和单一规格值，可以简化成第一种情况，或者采用第四种情况，通常实际情况下不常见；
 * 多个规格和多个规格值，通常是两种规格或者三种规格较为常见，而且对应的价格不完全相同。
 
-商品货品则是最终实现商品库存管理、购买业务的实体对象，存在多个规格值、数量和价格。
+商品货品表则是最终实现商品库存管理、购买业务的实体对象，存在多个规格值、数量和价格。
 例如，同样的衣服品牌，可能因为不能尺寸和颜色而存在最终的货品，这里每个货品的价格可以一样，也可以不一样。
 
 总结一下，一个普通商品，实际上在数据库中，存在一个商品表项，存在（至少0个）多个商品属性表项目，存在（至少一个）多个商品规格表项，
@@ -135,33 +139,45 @@ litemall数据库由三个sql文件组成，在litemall-db文件夹下面的sql�
 
 ### 2.1.3 行政区域设计
  
+litemall_region表保存了行政区域信息，包括省级、市级、县级三个等级，
+
 原nideship.sql中存在region数据，但是litemall.sql的region数据则来自
 [Administrative-divisions-of-China](https://github.com/modood/Administrative-divisions-of-China)项目。
 
-从该项目中导入数据到litemall.sql的litemall-province、litemall-city、litemall-area和litemall-street四个临时表；
-然后按照项目的要求采用一定的代码重新生成一个新的litemall-region表；
-最后删除四个临时表。
-
 ### 2.1.4 订单设计
 
-订单信息主要由基本信息、商品信息、地址信息、费用信息、快递信息、支付信息和其他信息组成。
+订单信息主要由基本信息、商品信息、地址信息、费用信息、快递信息、支付信息和其他信息组成，
+由litemall_order表和litemall_order_goods表保存。
 
 * 基本信息
-订单创建时的一些基本信息。
+
+订单创建时的一些基本信息，例如用户、订单状态和订单留言等。
+其中订单状态是最重要的信息。
 
 * 商品信息
+
 由于订单可以存在多个商品，因此订单的商品信息是由独立的订单商品表记录（可能更应该称为货品）。
 
 * 费用信息
 
-* 快递信息
-目前快递信息仅仅记录快递公司、快递单号、快递发出时间、快递接收时间。
-而如果快递过程中如果存在一些异常，例如物品丢失，则目前系统难以处理。
+订单一些费用情况，例如商品总价、优惠减免和实际付费等。
 
-关于快递费的计算，目前采取简单方式，即满88元则免费，否则10元。
+* 收货信息
+
+用户下单时选择的收货地址以及联系人信息。
+
+* 快递信息
+
+目前快递信息仅仅记录快递公司、快递单号、快递发出时间。
+而如果快递过程中如果存在一些异常，例如物品丢失，则目前系统难以处理。
 
 * 支付信息
 
+支付时间和支付订单ID。
+
+* 评论信息
+
+订单商品的评论情况。
 
 * 其他信息
 
@@ -204,8 +220,7 @@ litemall数据库由三个sql文件组成，在litemall-db文件夹下面的sql�
 
 * 203
 
-  状态码203，管理员在管理后台看到用户的退款申请，则登录微信官方支付平台退款，然后回到
-  管理后台点击成功退款操作。
+  状态码203，管理员在管理后台看到用户的退款申请，点击退款按钮进行退款操作。
   
 * 402
 
@@ -216,16 +231,15 @@ litemall数据库由三个sql文件组成，在litemall-db文件夹下面的sql�
 目前的设计是不执行物理删除，而是逻辑删除，因此用户查看自己订单时将看不到这些“已删除”的订单。
 
 注意：
-> 1. 目前退款相关功能未完成。
-> 2. 在上图中可以看到`101`到`101`的状态变化，这里只是小商场用户的操作，不会影响订单状态码。
->    如果用户点击付款时，后台服务会生成预支付会话id，但是不会影响订单状态。
->    如果而用户支付过程中，放弃支付，则也不会影响订单状态。
+> 在上图中可以看到`101`到`101`的状态变化，这里只是小商场用户的操作，不会影响订单状态码。
+> 如果用户点击付款时，后端服务会生成预支付会话id，但是不会影响订单状态。
+> 如果而用户支付过程中，放弃支付，则也不会影响订单状态。
 
-#### 2.1.4.2 状态变化所对应的流程
+#### 2.1.4.2 状态变化
 
 * 初始 -> 101
 
-小商场用户在小商场点击`下单`按钮，此时小商城后台服务会生产商户订单。
+小商场用户在小商场点击`下单`按钮，此时小商城后端服务会生产商户订单。
 
 所对应的后台服务方法是litemall-wx-api模块的`WxOrderController.submit`方法。
  
@@ -243,7 +257,7 @@ litemall数据库由三个sql文件组成，在litemall-db文件夹下面的sql�
 
 小商城接收返回的预支付信息后，会在小程序端出现支付页面。
 如果用户放弃支付，则不会出现任何效果，不会向小商场后台服务发送任何信息。
-如果用户支付，则会导致微信支付平台向小商场后台服务推送支付结果。
+如果用户支付，则会导致微信商户平台向小商场后台服务推送支付结果。
 
 * 101 -> 102
 
@@ -260,7 +274,7 @@ litemall数据库由三个sql文件组成，在litemall-db文件夹下面的sql�
 
 * 101 -> 201
 
-如果用户支付，微信支付平台会向小商场后台服务推送支付结果。
+如果用户支付，微信商户平台会向小商场后台服务推送支付结果。
 而响应结果表示支付成功，则订单状态信息设置201，表示支付成功。
 
 所对应的后台服务方法是litemall-wx-api模块的`WxOrderController.payNotify`
@@ -268,7 +282,7 @@ litemall数据库由三个sql文件组成，在litemall-db文件夹下面的sql�
 * 201 -> 202
 
 当用户支付以后，管理员未发货前，用户可以点击`退款`申请退款取消订单。
-通常用户点击退款以后系统可以基于微信支付平台的退款接口实现自动退款，
+通常用户点击退款以后系统可以基于微信商户平台的退款接口实现自动退款，
 但是这里考虑到安全原因，不支持系统自动退款操作。
 相应地，这里小商场后台服务只是设置订单状态，表示退款申请中。
 
@@ -276,7 +290,7 @@ litemall数据库由三个sql文件组成，在litemall-db文件夹下面的sql�
 
 * 202 -> 203
 
-这里退款操作是由管理员在微信支付平台手动退款，然后在本项目的
+这里退款操作是由管理员在微信商户平台手动退款，然后在本项目的
 管理平台里面点击`退款确认`按钮，此时订单状态会设置成203，表明
 退款已经成功，同时系统会自动恢复订单商品数量。
 
@@ -302,13 +316,12 @@ litemall数据库由三个sql文件组成，在litemall-db文件夹下面的sql�
 
 所对应的后台服务方法是litemall-admin-api模块的`AdminOrderController.checkOrderUnpaid`
 
-
 注意：
 > 上述订单状态变化中具体的逻辑处理可以参考相应模块文档和模块代码。
 
-#### 2.1.4.2 状态码所支持的用户操作
+#### 2.1.4.2 用户操作
 
-状态码标识了订单的状态，但是对于用户而言，真正关心的只是他们能够进行的操作，
+订单状态码标识了订单的状态，但是对于用户而言，真正关心的只是他们能够进行的操作，
 也就是在小商场的小程序端用户可以进行点击的按钮操作，目前支持：
 
 * `支付`，如果下单后未立即支付，则订单详情页面会出现`支付`按钮；
@@ -318,9 +331,7 @@ litemall数据库由三个sql文件组成，在litemall-db文件夹下面的sql�
 * `申请退货`，如果用户已经确认收货同时未超过一段时间，则订单详情页面会出现`申请退货`按钮；
    注意，这里如果是系统超时自动确认收货，则不会出现；
 * `去评价`，如果用户确认收货以后，则订单详情页面会出现`去评价`按钮；
-   注意，这里如果是系统超时自动确认收货，则也会出现；
 * `再次购买`，如果用户确认收货以后，则订单详情页面会出现`再次购买`按钮；
-   注意，这里如果是系统超时自动确认收货，则也会出现；
 * `删除`，如果当前订单状态码是102、103、203、401和402时，则订单详情页面会出现`删除订单`按钮；
    注意，这里的删除操作是逻辑删除，即设置订单的删除状态`deleted`。
   
@@ -352,44 +363,131 @@ litemall数据库由三个sql文件组成，在litemall-db文件夹下面的sql�
 
 * 401
 
-  用户可以`退货`、`删除`、`去评价`、`再次购买`
+  用户可以`删除`、`去评价`、`再次购买`
 
 * 402
 
   用户可以`删除`、`去评价`、`再次购买`
 
-开发者可以参考litemall-db模块的OrderUtil类。
-
 #### 2.1.4.3 售后处理
 
-虽然这里用户有`退款`操作，但是目前不支持退货相关业务。
+目前不支持退货售后相关业务。
 
-#### 2.1.4.4 黑名单
+#### 2.1.4.4 商品评价
 
-从一些资料看，如果用户订单多次取消，应该加入黑名单。
-目前不支持。
+在litemall_order表中存在`comments`字段，表示有几个订单商品没有评价；
+而在litemall_order_goods表中存在`comment`字段，表示当前订单商品的评论ID。
 
-### 2.1.5 通用设计
+* 当用户确认收货以后，`comments`设置当前订单中未评价的商品数量。而`comment`设置0；
+* 当用户评价一个订单商品，`comments`会减一，而`comment`指向新创建的评论；
+* 如果用户不评论超期，`comments`会设置0，而`comment`设置-1;
+
+### 2.1.5 评论设计
+
+评论表litemall_comment保存评论相关的信息，其中最关键的是`type`字段和`value_id`字段。
+
+这里`type`字段表示当前评论类型，目前存在三种类型：
+
+* 如果type=0，则当前评论是订单商品评论，value_id是订单商品ID；
+* 如果type=1，则当前评论是专题评论，value_id是专题ID；
+* 如果type=2，则当前评论是订单商品评论的回复，value_id是订单商品的评论ID。
+
+### 2.1.6 团购设计
+
+团购是由团购规则表litemall_groupon_rules和团购活动表litemall_groupon组成。
+
+管理员在管理后台对一些商品配置团购规则，保存在litemall_groupon_rules表中。
+
+用户在小商场中则看到团购规则给出的优惠信息。
+接下来用户存在两种操作：
+第一种是，用户开团，保存在litemall_groupon中，用户主动分享商品团购页面给朋友；
+第二张是，用户参团，也保存在litemall_groupon中。
+
+只有开团人数符合团购规则条件，创建的订单才会有效，否则管理员需要退款取消当前团购。
+
+### 2.1.7 优惠券设计
+
+优惠券由litemall_coupon表和litemall_coupon_user表组成：
+* litemall_coupon表，是优惠券基本信息及使用规则。
+* litemall_coupon_user表，是用户优惠券领取和使用的记录。
+
+#### 2.1.7.1 type
+
+type字段，标识优惠券发送的方式，目前支持：
+* 通用券，即在首页或者优惠券列表页，用户可以看到优惠券信息并且点击领取；
+* 注册券，即用户注册成功以后即系统自动发送给用户，无需领取；
+* 兑换券，即用户在个人优惠券页面输入兑换码来兑换一张优惠券。
+
+#### 2.1.7.2 goods_type
+
+goods_type字段，标识优惠券所能使用的商品范围：
+* 全场通用，即所有商品都能使用；
+* 类目限制，**目前不支持**，即某个类目的商品才能使用；
+* 商品限制，**目前不支持**，即部分商品才能使用优惠券。
+
+#### 2.1.7.3 time_type
+
+time_type字段，标识优惠券有效期；
+* 用户领券日期的相对天数，即用户领券以后开始几天内有效；
+* 管理员设置的绝对时间，即优惠券的开始使用时间和截至使用时间。
+
+#### 2.1.7.4 status
+
+status字段，标识优惠券的当前状态。
+
+这里需要指出的是，litemall_coupon表和litemall_coupon_user表都有status字段。
+
+litemall_coupon表的status字段，包含以后三种状态：
+* 正常可用，
+* 已过期，
+* 已下架，
+
+litemall_coupon_user表的status字段，包含以后三种状态：
+* 未使用，
+* 已使用，
+* 已过期，
+* 已下架，
+
+### 2.1.8 系统配置设计
+
+系统配置表litemall_system保存系统的配置信息。
+
+这里需要注意的是，在Java代码层系统配置表只能执行更新操作，
+不能执行创建和删除操作。也就是说，系统配置数据都应该是开发者
+基于系统的配置需求在数据库中手动创建。
+
+### 2.1.9 存储对象设计
+
+存储对象表litemall_storage保存上传文件信息。
+
+当用户或者管理员上传图像时，图像文件会保存到本地或者第三方云存储服务器中，
+同时在存储对象表中记录一下。
+
+### 2.1.10 通用设计
+
+除了以上表，数据库还存在其他一些业务表，例如专题表litemall_topic，
+但是都很直观，不需要多讨论。
 
 以下是一些表设计中无具体业务意义可通用的字段。
 
-#### 2.1.5.1 deleted
+#### 2.1.10.1 deleted
 
 除极少数表，其他所有表都存在`deleted`字段，支持逻辑删除。
 因此目前删除数据时，不会直接删除数据，而是修改`deleted`字段。
 当然，数据库管理员可以连接到数据库直接删除数据，或者开发者
 可以修改这里的逻辑采用物理删除。
 
-#### 2.1.5.2 add_time
+#### 2.1.10.2 add_time
 
 除极少数表，其他所有表都存在`add_time`字段，记录数据创建时间。
 
-#### 2.1.5.3 version
+#### 2.1.10.3 update_time
 
-如果开发者需要在访问表时采用乐观锁机制，则需要在表中设置`version`字段，
-这个字段开发者不需要管理，而是由程序自动使用，来提高乐观锁机制。
+除极少数表，其他所有表都存在`update_time`字段，记录数据修改时间。
 
-具体使用方法可以参考`2.2.8 乐观锁`
+此外，此外开发者可以利用update_time来实现乐观锁更新机制。
+
+具体使用方法可以参考`2.2.6 并发访问`
 
 ## 2.2 litemall-db
 
@@ -399,7 +497,7 @@ litemall-db模块是一个普通的Spring Boot应用，基于mybatis框架实现
 直接服务，没有使用Spring MVC技术。
 
 技术：
-* Spring Boot 1.5.10
+* Spring Boot 2.x
 * MySQL
 * Druid
 * Mybatis
@@ -415,9 +513,7 @@ litemall-db模块是一个普通的Spring Boot应用，基于mybatis框架实现
   * generator生成代码
   * 非generator手动代码
 * 业务代码
-* 安全代码
-* JSON支持代码
-* 配置代码
+* mybatis generator支持代码
 
 ### 2.2.1 mybatis数据库访问代码
 
@@ -427,10 +523,10 @@ mybatis数据库访问代码是指dao接口代码、dao数据库XML文件和doma
 * domain代码，则是保存数据库返回数据。
 
 此外，这里的数据库访问代码又进一步分成
-* generator生成代码，即基于mybatis generator相关插件自动生成上述三种代码或文件；
-* 非generator手动代码，则是需要开发者自己编写上述三种代码。
+* mybatis generator自动生成代码，即基于mybatis generator相关插件自动生成上述三种代码或文件；
+* 非mybatis generator手动代码，则是需要开发者自己编写上述三种代码。
 
-#### 2.2.1.1 generator生成代码
+#### 2.2.1.1 自动生成代码
 
 ![](./pic2/2-3.png)
 
@@ -447,20 +543,20 @@ mybatis数据库访问代码是指dao接口代码、dao数据库XML文件和doma
 而是直接操作Java代码来完成对数据库的访问处理。
 
 关于如何基于mybatis的Example代码来访问数据库，请查阅相关资料，
-或者参考本模块`org.linlinjava.litemall.db.dservice` 包内的Java代码。
+或者参考本模块`org.linlinjava.litemall.db.service` 包内的Java代码。
 
-当然，为了达到数据库访问效率，开发者也可以手动自定义mapper文件和对应的Java代码，但目前这里不采用或者不建议采用。
-例如，当需要访问两个表的数据时，这里是在业务层通过Java代码遍历的形式来访问两个表。
+当然，为了达到数据库访问效率，开发者也可以手动自定义mapper文件和对应的Java代码。
+例如，当需要访问两个表的数据时，这里是在业务层通过Java代码遍历的形式来访问两个表，
+也可以通过自定义的mapper文件来实现。
 
-这里，以`litemall_brand`表举例说明：
+接下来，以`litemall_brand`表举例说明如何自动生成代码：
 
-1. mybatis generator插件会根据数据库`table`标签
+1. mybatis generator插件会读取`table`标签
 
     ```
     <generatorConfiguration>
          <table tableName="litemall_brand">
              <generatedKey column="id" sqlStatement="MySql" identity="true" />
-             <columnOverride javaType="java.time.LocalDateTime" column="add_time"/>
          </table>
     </generatorConfiguration>
     ```
@@ -486,16 +582,12 @@ mybatis数据库访问代码是指dao接口代码、dao数据库XML文件和doma
     }
    ```
 
+关于mybatis generator的用法，可以自行查阅官网或文档。
 
-如果基于一个新表创建新访问组件，请阅读下面章节2.2.6
+#### 2.2.1.2 手动代码
 
-关于mybatis generator的用法，可以参考：
-https://blog.csdn.net/isea533/article/details/42102297
-
-#### 2.2.1.2 非generator手动代码
-
-虽然generator可以自动生产代码，帮助开发者简化开发工作，但是在涉及到多表操作或特殊数据库操作时，
-仍然需要开发者自己手动编写mybatis框架代码。
+虽然mybatis generator可以自动生产代码，帮助开发者简化开发工作，但是在涉及到多表操作或特殊数据库操作时，
+仍然需要开发者自己手动编写基于mybatis框架的相关代码。
 
 具体如何基于mybatis框架编写代码，请开发者自己查找资料。
 
@@ -514,26 +606,69 @@ https://blog.csdn.net/isea533/article/details/42102297
 
    在resources文件夹`org.linlinjava.litemall.db.domain.dao` 内的StatMapper.xml文件则是实现真正的数据库访问操作。
 
+4. service代码
 
+   这里可以在`org.linlinjava.litemall.db.service` 内定义一个StatServie.java代码，调用底层mapper代码，对外服务。
+    ```
+    @Service
+    public class StatService {
+        @Resource
+        private StatMapper statMapper;
+
+        public List<Map> statUser() {
+            return statMapper.statUser();
+        }
+
+        public List<Map> statOrder(){
+            return statMapper.statOrder();
+        }
+
+        public List<Map> statGoods(){
+            return statMapper.statGoods();
+        }
+    }
+    ```
+   
 ### 2.2.2 业务代码
 
-虽然2.2.1节所述代码已经能够提供数据库访问操作，但是这里仍然会抽象出业务访问层代码，即基于2.2.1所述代码和实际业务需求
-实现一些具体业务相关的操作，对其他模块提供便捷业务数据服务。
+虽然2.2.1节所述代码已经能够提供数据库访问操作，但是这里需要进一步地抽象出业务访问层代码，
+即基于2.2.1所述代码和实际业务需求实现一些具体业务相关的操作，对其他模块提供便捷业务数据服务。
 
 需要指出的是，这里的业务代码往往是单表相关的业务代码，而涉及到多表操作的java代码通常是在其他高层模块中实现。
 这里的业务分层并不是绝对的。例如，开发者可以取消这里的业务代码，而在其他模块中直接调用2.2.1所述代码。
 
 通常业务层代码在src文件夹`org.linlinjava.litemall.db.service` 包中。
 
-### 2.2.3 安全代码
+### 2.2.3 mybatis generator支持代码
 
-### 2.2.4 JSON支持代码
+mybatis generator自动生成代码时，通过内置类型转换器自动把数据库类型转换成Java类。
+例如数据库类型`varchar`自动转化成`java.lang.String`。
 
-### 2.2.5 配置代码
+但是某些情况下，可以通过自定义TypeHandler的方式来采用自定义的类型转换器。
+开发者可以自行阅读相关资料了解。
 
-采用Java注解的方式来完成一些特定的配置操作。
+本项目中，为了简化数据表的设计，某些字段采用`varchar`来存储Json格式的数据。
+例如商品的图片列表可以直接采用`[url0, url1, ...]`来存储，而不需要设计一个专门商品图片表。
 
-### 2.2.6 新服务组件
+这里通过自定义TypeHandler，可以实现Java的`String[]`和数据库类型`varchar`的自动转换。
+
+1. 实现JsonStringArrayTypeHandler类；
+2. 在mybatis generator配置文件中，配置需要的字段；
+    ```
+        <table tableName="litemall_goods">
+            <columnOverride column="gallery" javaType="java.lang.String[]"
+                            typeHandler="org.linlinjava.litemall.db.mybatis.JsonStringArrayTypeHandler"/>
+        </table>
+    ```
+3. 使用mybatis generator自动生成代码，可以看到LitemallGoods的gallery是`String[]`类型。
+
+目前只实现了两个自定义TypeHandler：
+* JsonStringArrayTypeHandler类，实现`String[]`和`varchar`的转换，保存的JSON数据格式是`[string0, string1, ...]`
+* JsonIntegerArrayTypeHandler类，实现`Integer[]`和`varchar`的转换，保存的JSON数据格式是`[integer0, integer1, ...]`
+
+如果开发者需要保存其他格式的JSON数据或者自定义格式的数据，请自行开发。
+
+### 2.2.4 新服务组件
 
 本节介绍如果基于一个表创建新的服务组件。
 
@@ -614,16 +749,15 @@ https://blog.csdn.net/isea533/article/details/42102297
     }
     ```
 
-### 2.2.7 逻辑删除
+### 2.2.5 逻辑删除
 
-数据删除可以直接使用delete方法进行物理删除，也可以采用设置删除字段进行逻辑删除。
+数据删除可以直接进行物理删除，也可以采用设置删除字段进行逻辑删除。
 根据具体业务，也有可能部分数据可以物理删除，部分数据只能逻辑删除。
 
-目前所有删除操作是逻辑删除，除了极少数表外，其他所有表的设置了`deleted 字段。
+目前本项目所有删除操作都是逻辑删除。
+开发者可以自行修改代码进行真正的物理删除，来避免数据库保存无用数据。
 
-开发者可以自行修改代码进行真正的物理删除。
-
-### 2.2.8 并发访问
+### 2.2.6 并发访问
 
 由于服务是多线程并发的，因此这带来了多线程同时操作数据库中同一数据的问题。
 由于数据极少删除或者是逻辑删除，因此操作数据，可以简化成更新数据。
@@ -639,30 +773,20 @@ https://blog.csdn.net/isea533/article/details/42102297
 
 通常采用悲观锁或者乐观锁来处理并发更新问题，
 
-本项目目前采用基于`version`字段的乐观锁机制。
+本项目目前采用基于`update_time`字段的乐观锁机制。
 原理是：
 
-1. 每个表都存在version字段
-2. 更新前，先查询数据，得到表的业务数据和version字段
-3. 更新时，通过where条件查询当前version字段和数据库中当前version字段是否相同。
-   * 如果相同，说明数据没有改变则可以更新，数据更新同时version调整一个新值；
+1. 每个表都存在update_time字段
+2. 更新前，先查询数据，得到表的业务数据和update_time字段
+3. 更新时，通过where条件查询当前update_time字段和数据库中当前update_time字段是否相同。
+   * 如果相同，说明数据没有改变则可以更新，数据更新同时update_time设置当前更新时间；
    * 如果不相同，则说明数据改变了则更新失败，不能修改数据。   
    
 当然，由于采用乐观锁，这里也会带来另外一个问题：
 数据库有可能更新失败，那么如何处理更新失败的情况？
+目前只是简单地报错更新失败。
 
-目前的方法是在业务层多次尝试。
-
-例如：
-由于用户A和B同时更新同一商品数量，而用户A成功，B则失败。
-此时B失败后会再次进行商品购买逻辑。
-
-当然逻辑上这里仍然会存在再次和其他用户同时购买而失败的情况。
-不过考虑到本项目设想的场景，因此可以采用。
-
-开发者需要注意这个问题，可能需要采用其他技术来解决或避免。
-
-### 2.2.9 事务管理
+### 2.2.7 事务管理
 
 litemall-db模块中不涉及到事务管理，而是在其他后台服务模块中涉及。
 但是其他后台服务模块因为依赖litemall-db模块，因此这里列出。
@@ -670,7 +794,7 @@ litemall-db模块中不涉及到事务管理，而是在其他后台服务模块
 事务管理的问题出现在多个表的修改操作中。
 
 例如用户A修改表1，再修改表2，而如果修改表2的时候出现错误推出，
-此时如果没有引入事务管理，那么这里会存在表1数据已跟新，表2数据
+此时如果没有引入事务管理，那么这里会存在表1数据已更新，表2数据
 未更新的问题。
 
 解决的方案是采用spring自带的事务管理机制。
@@ -680,7 +804,7 @@ litemall-db模块中不涉及到事务管理，而是在其他后台服务模块
 > 并发访问是多个用户同时操作单个表时可能出现的问题；
 > 而事务管理是单个用户操作多个表时可能出现的问题。
 
-### 2.2.10 mybatis增强框架
+### 2.2.8 mybatis增强框架
 
 通过mybatis-generator已经自动生成了很多代码，而且具有一定的功能，
 但是开发者仍然需要基于生成的代码写一些固定的CRUD代码。
@@ -694,8 +818,40 @@ litemall-db模块中不涉及到事务管理，而是在其他后台服务模块
 
 ## 2.3 litemall-core
 
-litemall-core模块是spring boot应用通用的代码，包括配置代码和util代码。
+litemall-core模块是本项目通用的代码：
 
+* config
+
+  通用配置，例如开启Spring Boot异步功能。
+
+* util
+
+  工具代码。
+
+* qcode
+
+  本项目定制的分享二维码图片。
+  
+* storage
+
+  存储功能，支持本地存储、腾讯云存储、阿里云存储和七牛云存储。
+      
+* notify
+
+  通知提醒功能，支持邮件通知、短信通知和微信通知。
+
+* express
+
+  物流服务，查询订单物流信息。
+  
+* system
+
+  通过litemall-db模块的数据库访问，读取本项目系统配置信息。
+
+* validator
+
+  提供两个校验注解，帮助后端验证请求参数。
+  
 ### 2.3.1 config
 
 #### 2.3.1.1 CorsConfig
@@ -763,40 +919,206 @@ Jackson做一些设置。
 
 bcypt代码本质上是spring里面的代码。
 
+### 2.3.3 二维码
+
+见QCodeService类。
+
 ### 2.3.4 对象存储
 
 对象存储服务目前的目标是支持图片的上传下载。
 
+对象存储服务会自动读取配置配置，然后实例化服务。
+
+对象存储接口：
+```
+public interface Storage {
+    void store(InputStream inputStream, long contentLength, String contentType, String keyName);
+    Stream<Path> loadAll();
+    Path load(String keyName);
+    Resource loadAsResource(String keyName);
+    void delete(String keyName);
+    String generateUrl(String keyName);
+}
+```
+
 #### 2.3.4.1 本地存储服务
+
+见LocalStorage类。
 
 #### 2.3.4.2 腾讯云存储服务
 
+见TencentStorage类。
+
 #### 2.3.4.3 阿里云存储服务
+
+见AliyunStorage类。
+
+#### 2.3.4.4 七牛云存储服务
+
+见QiniuStorage类。
 
 ### 2.3.5 消息通知
 
+消息通知用于通知用户或者管理员。
+
+注意：
+> 目前这里实现比较粗糙，以后会完善细节。
+
 #### 2.3.5.1 邮件通知
+
+见NotifyService类的`notifyMail`方法。
 
 #### 2.3.5.2 短信通知
 
-#### 2.3.5.3 微信模板通知
+见NotifyService类的`notifySms`和`notifySmsTemplate`方法。
+
+而短信通知实现类见`TencentSmsSender`类。
+也就是目前仅支持腾讯云短信服务，其他短信服务不支持。
+此外，开发者必须先在腾讯云短信平台申请模板才能使用。
+
+#### 2.3.5.3 微信通知
+
+见NotifyService类的`notifySms`和`notifyWxTemplate`方法。
+而微信通知实现类见`WxTemplateSender`类。
+开发者必须在微信平台申请模板才能使用。
 
 ### 2.3.6 物流跟踪
 
+物流跟踪是基于第三方服务快鸟物流查询服务。
+开发者需要申请才能使用。
+
+见`ExpressService`类。
+
 ### 2.3.7 系统设置
 
+### 2.3.8 校验注解
+
+自定了两个校验注解，帮助开发者校验HTTP参数。
+
+#### 2.3.8.1 Order
+
+校验用户请求参数值只能是`desc`或者`asc`。
+
+注意，这里的Order不是订单的意思，而是排序的意思。
+
+1. 定义注解Order
+    ```
+    @Target({METHOD, FIELD, PARAMETER})
+    @Retention(RUNTIME)
+    @Documented
+    @Constraint(validatedBy = OrderValidator.class)
+    public @interface Order {
+        String message() default "排序类型不支持";
+        String[] accepts() default {"desc", "asc"};
+        Class<?>[] groups() default {};
+        Class<? extends Payload>[] payload() default {};
+    }
+    ```
+2. 实现OrderValidator
+    ```
+    public class OrderValidator implements ConstraintValidator<Order, String> {
+        private List<String> valueList;
+        @Override
+        public void initialize(Order order) {
+            valueList = new ArrayList<String>();
+            for (String val : order.accepts()) {
+                valueList.add(val.toUpperCase());
+            }
+        }
+        @Override
+        public boolean isValid(String s, ConstraintValidatorContext constraintValidatorContext) {
+            if (!valueList.contains(s.toUpperCase())) {
+                return false;
+            }
+            return true;
+        }
+    }
+    ```
+3. 使用注解
+    ```
+    @RestController
+    @RequestMapping("/wx/topic")
+    @Validated
+    public class WxTopicController {
+        @GetMapping("list")
+        public Object list(@RequestParam(defaultValue = "1") Integer page,
+                       @RequestParam(defaultValue = "10") Integer size,
+                       @Sort @RequestParam(defaultValue = "add_time") String sort,
+                       @Order @RequestParam(defaultValue = "desc") String order) {
+         ...
+         }
+    ```
+    
+#### 2.3.8.2 Sort
+
+校验用户请求参数值只能是`add_time`或者`id`。
+
+1. 定义注解Sort
+    ```
+    @Target({METHOD, FIELD, PARAMETER})
+    @Retention(RUNTIME)
+    @Documented
+    @Constraint(validatedBy = SortValidator.class)
+    public @interface Sort {
+        String message() default "排序字段不支持";
+        String[] accepts() default {"add_time", "id"};
+        Class<?>[] groups() default {};
+        Class<? extends Payload>[] payload() default {};
+    }
+    ```
+2. 实现SortValidator
+    ```
+    public class SortValidator implements ConstraintValidator<Sort, String> {
+        private List<String> valueList;
+    
+        @Override
+        public void initialize(Sort sort) {
+            valueList = new ArrayList<String>();
+            for (String val : sort.accepts()) {
+                valueList.add(val.toUpperCase());
+            }
+        }
+    
+        @Override
+        public boolean isValid(String s, ConstraintValidatorContext constraintValidatorContext) {
+            if (!valueList.contains(s.toUpperCase())) {
+                return false;
+            }
+            return true;
+        }
+    }
+    ```
+3. 使用注解
+    ```
+    @RestController
+    @RequestMapping("/wx/topic")
+    @Validated
+    public class WxTopicController {
+        @GetMapping("list")
+        public Object list(@RequestParam(defaultValue = "1") Integer page,
+                       @RequestParam(defaultValue = "10") Integer size,
+                       @Sort @RequestParam(defaultValue = "add_time") String sort,
+                       @Order @RequestParam(defaultValue = "desc") String order) {
+         ...
+         }
+    ```
 
 ## 2.4 litemall-all
 
 在章节1.5中讨论的部署方案中设计了一种单主机单服务方案，
-也就是说两个后台服务和静态文件都部署在一个Spring Boot应用中。
-
-注意：
-> 这个模块也是可选的，或者说不是非常建议的，应该仅用在主机内存资源紧张的情况下。
-> 最终部署，仍然建议部署多个服务更为安全和稳定。
+也就是说两个后台服务和静态文件都部署在一个Spring Boot可执行jar包中。
 
 查看litemall-all模块，代码仅仅只有一个Application类。
 
 实际的原理是litemall-all模块内的pom.xml文件：
 
-1. 声明打包方式是`war`，因此最后会打包war格式
+1. 打包方式是`jar`，因此最后会打包可执行jar格式；
+2. 对litemall-wx-api模块和litemall-admin-api模块依赖，
+   因此打包时会作为依赖库而打包到litemall-all模块的输出中；
+3. 使用copy-resources插件，在打包时把litemall-admin模块的dist
+   文件夹拷贝到litemall-all模块的static文件夹中；而这个文件夹
+   正是Spring Boot应用的默认静态文件路径。
+   
+   注意：
+   > 这个插件只是简单的拷贝操作；因此开发者应该在打包litemall-all
+   > 之前确保先编译litemall-admin模块得到最终静态文件。

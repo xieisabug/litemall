@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -26,6 +27,8 @@ public class LitemallIssueService {
     }
 
     public void add(LitemallIssue issue) {
+        issue.setAddTime(LocalDateTime.now());
+        issue.setUpdateTime(LocalDateTime.now());
         issueMapper.insertSelective(issue);
     }
 
@@ -33,8 +36,8 @@ public class LitemallIssueService {
         LitemallIssueExample example = new LitemallIssueExample();
         LitemallIssueExample.Criteria criteria = example.createCriteria();
 
-        if(!StringUtils.isEmpty(question)){
-            criteria.andQuestionLike("%" + question + "%" );
+        if (!StringUtils.isEmpty(question)) {
+            criteria.andQuestionLike("%" + question + "%");
         }
         criteria.andDeletedEqualTo(false);
 
@@ -50,16 +53,17 @@ public class LitemallIssueService {
         LitemallIssueExample example = new LitemallIssueExample();
         LitemallIssueExample.Criteria criteria = example.createCriteria();
 
-        if(!StringUtils.isEmpty(question)){
-            criteria.andQuestionLike("%" + question + "%" );
+        if (!StringUtils.isEmpty(question)) {
+            criteria.andQuestionLike("%" + question + "%");
         }
         criteria.andDeletedEqualTo(false);
 
-        return (int)issueMapper.countByExample(example);
+        return (int) issueMapper.countByExample(example);
     }
 
-    public void updateById(LitemallIssue issue) {
-        issueMapper.updateByPrimaryKeySelective(issue);
+    public int updateById(LitemallIssue issue) {
+        issue.setUpdateTime(LocalDateTime.now());
+        return issueMapper.updateByPrimaryKeySelective(issue);
     }
 
     public LitemallIssue findById(Integer id) {

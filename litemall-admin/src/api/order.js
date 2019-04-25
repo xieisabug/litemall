@@ -1,10 +1,14 @@
 import request from '@/utils/request'
+import Qs from 'qs'
 
 export function listOrder(query) {
   return request({
     url: '/order/list',
     method: 'get',
-    params: query
+    params: query,
+    paramsSerializer: function(params) {
+      return Qs.stringify(params, { arrayFormat: 'repeat' })
+    }
   })
 }
 
@@ -27,6 +31,14 @@ export function shipOrder(data) {
 export function refundOrder(data) {
   return request({
     url: '/order/refund',
+    method: 'post',
+    data
+  })
+}
+
+export function replyComment(data) {
+  return request({
+    url: '/order/reply',
     method: 'post',
     data
   })

@@ -1,13 +1,14 @@
 package org.linlinjava.litemall.db.service;
 
 import com.github.pagehelper.PageHelper;
-import org.linlinjava.litemall.db.domain.LitemallCollect;
 import org.linlinjava.litemall.db.dao.LitemallCollectMapper;
+import org.linlinjava.litemall.db.domain.LitemallCollect;
 import org.linlinjava.litemall.db.domain.LitemallCollectExample;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -18,7 +19,7 @@ public class LitemallCollectService {
     public int count(int uid, Integer gid) {
         LitemallCollectExample example = new LitemallCollectExample();
         example.or().andUserIdEqualTo(uid).andValueIdEqualTo(gid).andDeletedEqualTo(false);
-        return (int)collectMapper.countByExample(example);
+        return (int) collectMapper.countByExample(example);
     }
 
     public List<LitemallCollect> queryByType(Integer userId, Byte type, Integer page, Integer size) {
@@ -32,7 +33,7 @@ public class LitemallCollectService {
     public int countByType(Integer userId, Byte type) {
         LitemallCollectExample example = new LitemallCollectExample();
         example.or().andUserIdEqualTo(userId).andTypeEqualTo(type).andDeletedEqualTo(false);
-        return (int)collectMapper.countByExample(example);
+        return (int) collectMapper.countByExample(example);
     }
 
     public LitemallCollect queryByTypeAndValue(Integer userId, Byte type, Integer valueId) {
@@ -46,6 +47,8 @@ public class LitemallCollectService {
     }
 
     public int add(LitemallCollect collect) {
+        collect.setAddTime(LocalDateTime.now());
+        collect.setUpdateTime(LocalDateTime.now());
         return collectMapper.insertSelective(collect);
     }
 
@@ -53,10 +56,10 @@ public class LitemallCollectService {
         LitemallCollectExample example = new LitemallCollectExample();
         LitemallCollectExample.Criteria criteria = example.createCriteria();
 
-        if(!StringUtils.isEmpty(userId)){
+        if (!StringUtils.isEmpty(userId)) {
             criteria.andUserIdEqualTo(Integer.valueOf(userId));
         }
-        if(!StringUtils.isEmpty(valueId)){
+        if (!StringUtils.isEmpty(valueId)) {
             criteria.andValueIdEqualTo(Integer.valueOf(valueId));
         }
         criteria.andDeletedEqualTo(false);
@@ -73,22 +76,14 @@ public class LitemallCollectService {
         LitemallCollectExample example = new LitemallCollectExample();
         LitemallCollectExample.Criteria criteria = example.createCriteria();
 
-        if(!StringUtils.isEmpty(userId)){
+        if (!StringUtils.isEmpty(userId)) {
             criteria.andUserIdEqualTo(Integer.valueOf(userId));
         }
-        if(!StringUtils.isEmpty(valueId)){
+        if (!StringUtils.isEmpty(valueId)) {
             criteria.andValueIdEqualTo(Integer.valueOf(valueId));
         }
         criteria.andDeletedEqualTo(false);
 
-        return (int)collectMapper.countByExample(example);
-    }
-
-    public void updateById(LitemallCollect collect) {
-        collectMapper.updateByPrimaryKeySelective(collect);
-    }
-
-    public LitemallCollect findById(Integer id) {
-        return collectMapper.selectByPrimaryKey(id);
+        return (int) collectMapper.countByExample(example);
     }
 }

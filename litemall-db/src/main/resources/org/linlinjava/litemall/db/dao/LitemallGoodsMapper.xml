@@ -24,8 +24,8 @@
     <result column="counter_price" jdbcType="DECIMAL" property="counterPrice" />
     <result column="retail_price" jdbcType="DECIMAL" property="retailPrice" />
     <result column="add_time" jdbcType="TIMESTAMP" property="addTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
     <result column="deleted" jdbcType="BIT" property="deleted" />
-    <result column="version" jdbcType="INTEGER" property="version" />
   </resultMap>
   <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="org.linlinjava.litemall.db.domain.LitemallGoods">
     <!--
@@ -145,7 +145,7 @@
     -->
     id, goods_sn, `name`, category_id, brand_id, gallery, keywords, brief, is_on_sale, 
     sort_order, pic_url, share_url, is_new, is_hot, unit, counter_price, retail_price, 
-    add_time, deleted, version
+    add_time, update_time, deleted
   </sql>
   <sql id="Blob_Column_List">
     <!--
@@ -205,13 +205,13 @@
     <choose>
       <when test="selective != null and selective.length &gt; 0">
         <foreach collection="selective" item="column" separator=",">
-          ${column.value}
+          ${column.escapedColumnName}
         </foreach>
       </when>
       <otherwise>
         id, goods_sn, `name`, category_id, brand_id, gallery, keywords, brief, is_on_sale, 
           sort_order, pic_url, share_url, is_new, is_hot, unit, counter_price, retail_price, 
-          add_time, deleted, version, detail
+          add_time, update_time, deleted, detail
       </otherwise>
     </choose>
     from litemall_goods
@@ -253,10 +253,10 @@
       and deleted = 
     <choose>
       <when test="andLogicalDeleted">
-        '1'
+        1
       </when>
       <otherwise>
-        '0'
+        0
       </otherwise>
     </choose>
   </select>
@@ -270,13 +270,13 @@
     <choose>
       <when test="selective != null and selective.length &gt; 0">
         <foreach collection="selective" item="column" separator=",">
-          ${column.value}
+          ${column.escapedColumnName}
         </foreach>
       </when>
       <otherwise>
         id, goods_sn, `name`, category_id, brand_id, gallery, keywords, brief, is_on_sale, 
           sort_order, pic_url, share_url, is_new, is_hot, unit, counter_price, retail_price, 
-          add_time, deleted, version, detail
+          add_time, update_time, deleted, detail
       </otherwise>
     </choose>
     from litemall_goods
@@ -313,15 +313,15 @@
       keywords, brief, is_on_sale, 
       sort_order, pic_url, share_url, 
       is_new, is_hot, unit, counter_price, 
-      retail_price, add_time, deleted, 
-      version, detail)
+      retail_price, add_time, update_time, 
+      deleted, detail)
     values (#{goodsSn,jdbcType=VARCHAR}, #{name,jdbcType=VARCHAR}, #{categoryId,jdbcType=INTEGER}, 
       #{brandId,jdbcType=INTEGER}, #{gallery,jdbcType=VARCHAR,typeHandler=org.linlinjava.litemall.db.mybatis.JsonStringArrayTypeHandler}, 
       #{keywords,jdbcType=VARCHAR}, #{brief,jdbcType=VARCHAR}, #{isOnSale,jdbcType=BIT}, 
       #{sortOrder,jdbcType=SMALLINT}, #{picUrl,jdbcType=VARCHAR}, #{shareUrl,jdbcType=VARCHAR}, 
       #{isNew,jdbcType=BIT}, #{isHot,jdbcType=BIT}, #{unit,jdbcType=VARCHAR}, #{counterPrice,jdbcType=DECIMAL}, 
-      #{retailPrice,jdbcType=DECIMAL}, #{addTime,jdbcType=TIMESTAMP}, #{deleted,jdbcType=BIT}, 
-      #{version,jdbcType=INTEGER}, #{detail,jdbcType=LONGVARCHAR})
+      #{retailPrice,jdbcType=DECIMAL}, #{addTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}, 
+      #{deleted,jdbcType=BIT}, #{detail,jdbcType=LONGVARCHAR})
   </insert>
   <insert id="insertSelective" parameterType="org.linlinjava.litemall.db.domain.LitemallGoods">
     <!--
@@ -384,11 +384,11 @@
       <if test="addTime != null">
         add_time,
       </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
       <if test="deleted != null">
         deleted,
-      </if>
-      <if test="version != null">
-        version,
       </if>
       <if test="detail != null">
         detail,
@@ -446,11 +446,11 @@
       <if test="addTime != null">
         #{addTime,jdbcType=TIMESTAMP},
       </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
       <if test="deleted != null">
         #{deleted,jdbcType=BIT},
-      </if>
-      <if test="version != null">
-        #{version,jdbcType=INTEGER},
       </if>
       <if test="detail != null">
         #{detail,jdbcType=LONGVARCHAR},
@@ -528,11 +528,11 @@
       <if test="record.addTime != null">
         add_time = #{record.addTime,jdbcType=TIMESTAMP},
       </if>
+      <if test="record.updateTime != null">
+        update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      </if>
       <if test="record.deleted != null">
         deleted = #{record.deleted,jdbcType=BIT},
-      </if>
-      <if test="record.version != null">
-        version = #{record.version,jdbcType=INTEGER},
       </if>
       <if test="record.detail != null">
         detail = #{record.detail,jdbcType=LONGVARCHAR},
@@ -566,8 +566,8 @@
       counter_price = #{record.counterPrice,jdbcType=DECIMAL},
       retail_price = #{record.retailPrice,jdbcType=DECIMAL},
       add_time = #{record.addTime,jdbcType=TIMESTAMP},
+      update_time = #{record.updateTime,jdbcType=TIMESTAMP},
       deleted = #{record.deleted,jdbcType=BIT},
-      version = #{record.version,jdbcType=INTEGER},
       detail = #{record.detail,jdbcType=LONGVARCHAR}
     <if test="_parameter != null">
       <include refid="Update_By_Example_Where_Clause" />
@@ -597,8 +597,8 @@
       counter_price = #{record.counterPrice,jdbcType=DECIMAL},
       retail_price = #{record.retailPrice,jdbcType=DECIMAL},
       add_time = #{record.addTime,jdbcType=TIMESTAMP},
-      deleted = #{record.deleted,jdbcType=BIT},
-      version = #{record.version,jdbcType=INTEGER}
+      update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      deleted = #{record.deleted,jdbcType=BIT}
     <if test="_parameter != null">
       <include refid="Update_By_Example_Where_Clause" />
     </if>
@@ -661,11 +661,11 @@
       <if test="addTime != null">
         add_time = #{addTime,jdbcType=TIMESTAMP},
       </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
       <if test="deleted != null">
         deleted = #{deleted,jdbcType=BIT},
-      </if>
-      <if test="version != null">
-        version = #{version,jdbcType=INTEGER},
       </if>
       <if test="detail != null">
         detail = #{detail,jdbcType=LONGVARCHAR},
@@ -696,8 +696,8 @@
       counter_price = #{counterPrice,jdbcType=DECIMAL},
       retail_price = #{retailPrice,jdbcType=DECIMAL},
       add_time = #{addTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
       deleted = #{deleted,jdbcType=BIT},
-      version = #{version,jdbcType=INTEGER},
       detail = #{detail,jdbcType=LONGVARCHAR}
     where id = #{id,jdbcType=INTEGER}
   </update>
@@ -724,8 +724,8 @@
       counter_price = #{counterPrice,jdbcType=DECIMAL},
       retail_price = #{retailPrice,jdbcType=DECIMAL},
       add_time = #{addTime,jdbcType=TIMESTAMP},
-      deleted = #{deleted,jdbcType=BIT},
-      version = #{version,jdbcType=INTEGER}
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      deleted = #{deleted,jdbcType=BIT}
     where id = #{id,jdbcType=INTEGER}
   </update>
   <select id="selectOneByExample" parameterType="org.linlinjava.litemall.db.domain.LitemallGoodsExample" resultMap="BaseResultMap">
@@ -774,13 +774,13 @@
     <choose>
       <when test="selective != null and selective.length &gt; 0">
         <foreach collection="selective" item="column" separator=",">
-          ${column.value}
+          ${column.escapedColumnName}
         </foreach>
       </when>
       <otherwise>
         id, goods_sn, `name`, category_id, brand_id, gallery, keywords, brief, is_on_sale, 
           sort_order, pic_url, share_url, is_new, is_hot, unit, counter_price, retail_price, 
-          add_time, deleted, version, detail
+          add_time, update_time, deleted, detail
       </otherwise>
     </choose>
     from litemall_goods
